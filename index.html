@@ -224,7 +224,7 @@
 <main>
   <!-- Hero -->
   <section class="relative">
-      <div class="h-[70vh] md:h-[66vh] bg-cover bg-center hero-overlay" style="background-image: url('img/1.webp');">
+      <div class="h-[70vh] md:h-[66vh] bg-cover bg-center hero-overlay" style="background-image: url('img/sonotheque.webp');">
         <div class="absolute inset-0 hero-overlay"></div>
         <div class="relative z-10 max-w-6xl mx-auto px-6 h-full flex items-center">
           <div class="max-w-2xl">
@@ -234,6 +234,7 @@
         </div>
       </div>
   </section>
+
 
   <section id="nouveautes" class="max-w-6xl mx-auto px-6 py-12">
     <div class="view-elements">
@@ -262,6 +263,25 @@
     <!-- Vrai contenu (caché au départ) -->
     <div id="latestClips" class="hidden grid grid-cols-1 md:grid-cols-3 gap-6"></div>
   </section>
+
+
+    <section class="max-w-6xl mx-auto px-6 py-8">
+
+        <h2 class="text-3xl font-bold mb-4">À propos de La Ville Sonore</h2>
+
+
+  <p><em>La Ville Sonore</em> est une invitation à écouter autrement nos espaces urbains.
+Plutôt qu’une simple sonothèque, le projet propose une cartographie sensible des villes, composée non de rues et de façades, mais de voix, de rythmes et de respirations. Chaque fragment sonore : une sirène lointaine, un rire d’enfant, l’écho d’une passerelle, la rumeur d’un marché devient une trace, une mémoire fugace qui révèle l’âme des lieux.</p>
+
+<p>En parcourant ces paysages sonores, on redécouvre la ville comme une partition vivante : à la fois familière et surprenante, banale et unique. L’oreille devient un outil d’observation, et chaque bruit, même le plus discret, se charge de sens.</p>
+
+<p class="mb-4"><em>La Ville Sonore</em> n’est pas seulement un projet d’archives, mais une exploration artistique : elle révèle ce que nous n’entendons plus, elle transforme le quotidien en matière poétique, et elle propose une autre manière d’habiter la ville, par l’écoute.</p>
+
+<a class="hover:underline font-semibold" href="about.html">En savoir plus</a>
+
+
+
+</section>
 
 
 
@@ -397,31 +417,13 @@
   </section>
 
 
-<section class="max-w-6xl mx-auto px-6 py-8">
-   <div class="view-elements">
-  <h2 class="text-3xl font-bold mb-4">Collections thématiques</h2>
-  <a href="collections.html" class="view-all">Voir toutes les collections</a>
-</div>
-
-
-
-</section>
-
-
-
-
-
-
-
-
-
 
 
   <section id="nouveautes" class="max-w-6xl mx-auto px-6 py-6">
 
     <h2 class="text-3xl font-bold mb-4">Carte sonore</h2>
 
-    <p class="lead justify">Cliquez sur les marqueurs pour écouter une captation. Utilisez la liste pour naviguer et contrôler la lecture. Les fichiers proviennent d'un tableau JavaScript et la carte est entièrement responsive.</p>
+    <p class="lead justify">Cliquez sur les marqueurs pour écouter une captation. Utilisez la liste pour naviguer et contrôler la lecture.<br>Tous les enregistrements de <em>La Ville Sonore</em> sont mis à disposition en accès libre. Vous pouvez les écouter, les télécharger et les réutiliser librement, à condition de respecter un usage non commercial. Cette ouverture vise à favoriser le partage, l’expérimentation et la création collective, afin que ces fragments sonores puissent continuer à vivre et à résonner ailleurs, dans de nouveaux projets artistiques, pédagogiques ou personnels.</p>
 
     <div class="layout">
       <div>
@@ -438,6 +440,26 @@
       </aside>
     </div>
   </div>
+</section>
+
+  <section id="nouveautes" class="max-w-6xl mx-auto px-6 py-12 flex flex-col md:flex-row items-center justify-between mt-4">
+  <!-- Texte à gauche -->
+  <div class="w-full md:w-2/3 pr-0 md:pr-8 mb-8 md:mb-0">
+    <h2 class="text-3xl font-bold mb-2">Gaël Maignan</h2>
+    <p class="text-2xl font-bold mb-4">Artiste / Urbaniste</p>
+    <p>
+      Je suis <a href="http://gael-maignan.fr/" target="_blank" class="lien">Gaël Maignan</a>, artiste et urbaniste. Mon travail explore les manières dont la ville se vit et se perçoit au-delà de ses formes visibles : à travers ses sons, ses usages et ses mémoires sensibles.</p>
+      <p>
+Formé à l’École des Ingénieurs de la Ville de Paris, j’accorde une attention particulière aux espaces du quotidien, aux ambiances, aux détails souvent invisibles mais qui façonnent profondément notre rapport à l’environnement urbain.</p>
+<p class="mb-4">
+Avec <em>La Ville Sonore</em>, je cherche à révéler la dimension poétique et vivante des villes en les écoutant autrement : comme des partitions mouvantes, faites de voix, de rythmes et de silences. Mon approche se situe à la croisée de l’art sonore et de la recherche urbaine, afin d’inviter chacun à prêter l’oreille et à redécouvrir la richesse sensorielle de nos espaces partagés.
+    </p>
+  </div>
+
+  <div class="w-full md:w-1/3">
+    <img src="img/gael-maignan.jpg" alt="Toulouse" class="w-full h-full object-cover rounded-lg">
+  </div>
+</section>
 
   <!-- Mobile sticky player -->
   <div class="mobile-player" id="mobilePlayer" style="display:none; z-index: 1000;">
@@ -447,7 +469,7 @@
       <div id="mp-meta" style="font-size:0.85rem;color:#666">00:00 — 0.0s</div>
     </div>
     <div>
-      <button id="mp-play" class="btn">Play</button>
+      <button id="mp-play" class="btn">Pause</button>
     </div>
   </section>
 
