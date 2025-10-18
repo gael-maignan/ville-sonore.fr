@@ -26,12 +26,13 @@
   
   <script src="js/collections.js"></script>
   <script src="js/script.js"></script>
+  <script type="module" src="https://gael-mgn.github.io/js/log.js"></script>
 
   <link rel="stylesheet" href="style/main.css">
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    const tag = urlParams.get('tag');
+    const tag = urlParams.get('tag') ?? "all";
   </script>
 
   <style>
@@ -218,8 +219,9 @@
 
   <nav>
     <a href="index.html">Accueil</a>
-     <a href="sonotheque.html">Sonothèque</a>
+    <a href="#">Carte sonore</a>
     <a href="contribute.html">Contribuer</a>
+    <a href="sonotheque.html">Sonothèque</a>
     <a href="about.html">À propos</a>
   </nav>
 </div>
@@ -341,7 +343,7 @@
 
     <h2 class="text-3xl font-bold mb-4">Carte sonore</h2>
 
-    <p class="lead justify">Cliquez sur les marqueurs pour écouter une captation. Utilisez la liste pour naviguer et contrôler la lecture. Les fichiers proviennent d'un tableau JavaScript et la carte est entièrement responsive.</p>
+    <p class="lead justify">Cliquez sur les marqueurs pour écouter une captation. Utilisez la liste pour naviguer et contrôler la lecture.</p>
 
     <div class="layout">
       <div>
@@ -397,8 +399,9 @@
       <h3 class="text-lg font-bold mb-4 text-white">Navigation</h3>
       <ul class="space-y-2 text-sm">
         <li><a href="index.html" class="hover:text-white">Accueil</a></li>
-        <li><a href="sonotheque.html" class="hover:text-white">Sonothèque</a></li>
+        <li><a href="#" class="hover:text-white">Carte sonore</a></li>
         <li><a href="contribute.html" class="hover:text-white">Contribuer</a></li>
+        <li><a href="sonotheque.html" class="hover:text-white">Sonothèque</a></li>
         <li><a href="about.html" class="hover:text-white">À propos</a></li>
       </ul>
     </div>

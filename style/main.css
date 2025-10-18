@@ -292,7 +292,7 @@ background-position: center;
   line-height: 1.4;
 }
 
-.tag a {
+.tag a, .cta {
   display: inline-block;
   margin-top: 12px;
   padding: 8px 14px;
@@ -304,7 +304,7 @@ background-position: center;
   transition: background 0.3s ease;
 }
 
-.tag a:hover {
+.tag a:hover, .cta:hover {
   background: rgba(255,255,255,0.35);
 }
 

@@ -74,7 +74,7 @@ categories: (categories && typeof categories === 'string') ? stringToArray(categ
     };
   });
 
-  if(tag.length > 0){
+  if(tag.length > 0 && tag!="all"){
      clips = clips.filter(c => c.categories.some(cat => cat.toLowerCase() === tag)); 
   }
 }
