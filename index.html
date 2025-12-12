@@ -235,6 +235,32 @@ Plutôt qu’une simple sonothèque, le projet propose une cartographie sensible
 
 -->
 
+
+
+  <section id="nouveautes" class="max-w-6xl mx-auto px-6 py-6">
+
+    <h2 class="text-3xl font-bold mb-4">Carte sonore</h2>
+
+    <p class="lead justify">Cliquez sur les marqueurs pour écouter une captation. Utilisez la liste pour naviguer et contrôler la lecture.<br>Tous les enregistrements de <em>La Ville Sonore</em> sont mis à disposition en accès libre. Vous pouvez les écouter, les télécharger et les réutiliser librement, à condition de respecter un usage non commercial. Cette ouverture vise à favoriser le partage, l’expérimentation et la création collective, afin que ces fragments sonores puissent continuer à vivre et à résonner ailleurs, dans de nouveaux projets artistiques, pédagogiques ou personnels.</p>
+
+    <div class="layout">
+      <div>
+        <div id="map" aria-label="Carte des captations sonores"></div>
+      </div>
+
+      <aside>
+        <div class="search">
+          <input id="search" placeholder="Rechercher un titre ou une date..." />
+        </div>
+        <div class="clip" id="clipsList" aria-live="polite">
+          <!-- items injected here -->
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+
 <section id="nouveautes" class="max-w-6xl mx-auto px-6 py-6 flex flex-col md:flex-row items-center justify-between">
 
   <div class="clip-card w-full pr-0 md:pr-8 mb-8 md:mb-0">
@@ -271,30 +297,6 @@ Plutôt qu’une simple sonothèque, le projet propose une cartographie sensible
   </section>
 
 
-
-
-  <section id="nouveautes" class="max-w-6xl mx-auto px-6 py-6">
-
-    <h2 class="text-3xl font-bold mb-4">Carte sonore</h2>
-
-    <p class="lead justify">Cliquez sur les marqueurs pour écouter une captation. Utilisez la liste pour naviguer et contrôler la lecture.<br>Tous les enregistrements de <em>La Ville Sonore</em> sont mis à disposition en accès libre. Vous pouvez les écouter, les télécharger et les réutiliser librement, à condition de respecter un usage non commercial. Cette ouverture vise à favoriser le partage, l’expérimentation et la création collective, afin que ces fragments sonores puissent continuer à vivre et à résonner ailleurs, dans de nouveaux projets artistiques, pédagogiques ou personnels.</p>
-
-    <div class="layout">
-      <div>
-        <div id="map" aria-label="Carte des captations sonores"></div>
-      </div>
-
-      <aside>
-        <div class="search">
-          <input id="search" placeholder="Rechercher un titre ou une date..." />
-        </div>
-        <div class="clip" id="clipsList" aria-live="polite">
-          <!-- items injected here -->
-        </div>
-      </aside>
-    </div>
-  </div>
-</section>
 
   <section id="nouveautes" class="max-w-6xl mx-auto px-6 py-12 flex flex-col md:flex-row items-center justify-between mt-4">
   <!-- Texte à gauche -->

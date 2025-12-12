@@ -302,6 +302,12 @@ derniers.forEach((clip, idx) => {
   const card = document.createElement('div');
   card.className = 'clip-card';
 
+  if (clip.categories.length > 0){
+        const item = collections.find(item => item.id === clip.categories[0]);
+        const lienImg = item ? item.image : null;
+        if(lienImg) card.style.backgroundImage = `url(${lienImg})`;
+      }
+
   // contenu principal (sans bouton pour l'instant)
   card.innerHTML = `
     <div class="clip-title">${clip.titre}</div>
