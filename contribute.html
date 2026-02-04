@@ -606,13 +606,49 @@ Si vous avez des questions à ce sujet, ou si vous souhaitez que l’un de vos e
 
 
     // Optionnel : collecte de la position
-    let position = { lat: null, lon: null };
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        ({coords}) => { position.lat = coords.latitude; position.lon = coords.longitude; },
-        () => {}, { enableHighAccuracy: true, maximumAge: 10_000, timeout: 5_000 }
-      );
-    }
+// Optionnel : collecte de la position (tentative au chargement + réessai au submit)
+let position = { lat: null, lon: null };
+let positionObtained = false;
+
+function getPosition(timeout = 7000) {
+  return new Promise((resolve) => {
+    if (!("geolocation" in navigator)) return resolve(null);
+    let resolved = false;
+    const timer = setTimeout(() => {
+      if (!resolved) { resolved = true; resolve(null); }
+    }, timeout);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timer);
+        position.lat = pos.coords.latitude;
+        position.lon = pos.coords.longitude;
+        positionObtained = true;
+        try { statusEl.textContent = "📍 Position récupérée."; } catch(e){/* statusEl peut ne pas exister encore */ }
+        resolve(position);
+      },
+      (err) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timer);
+        console.warn("Geolocation error:", err);
+        resolve(null);
+      },
+      { enableHighAccuracy: true, maximumAge: 10_000, timeout: timeout }
+    );
+  });
+}
+
+// Lancer une première tentative au chargement de la page (sans bloquer le reste)
+document.addEventListener("DOMContentLoaded", () => {
+  // on ne force pas l'utilisateur à attendre — on précharge la position en fond
+  getPosition(7000).then(pos => {
+    if (!pos) console.log("Position non récupérée au chargement.");
+  });
+});
+
 
     async function initMic() {
       try {
@@ -745,7 +781,8 @@ Si vous avez des questions à ce sujet, ou si vous souhaitez que l’un de vos e
       statusEl.textContent = `Fichier WAV prêt (${dureeSec}s). Renseignez les infos puis "Soumettre".`;
     };
 
-    submitBtn.onclick = () => {
+
+    submitBtn.onclick = async () => {
       if (!lastAudioBlob) {
         statusEl.textContent = "❌ Aucun fichier à envoyer. Enregistre d'abord.";
         return;
@@ -761,21 +798,25 @@ Si vous avez des questions à ce sujet, ou si vous souhaitez que l’un de vos e
 
       openPageLoader("Envoi en cours...");
 
-      const now = new Date();
+      // Si on n'a pas de position (ou si elle est nulle), retenter ici (timeout court)
+      if (!positionObtained) {
+        statusEl.textContent = "📍 Tentative de récupération de la position...";
+        const pos = await getPosition(7000); // attend jusqu'à 7s
+        if (pos) {
+          position = pos;
+          statusEl.textContent = "📍 Position récupérée.";
+        } else {
+          statusEl.textContent = "⚠️ Position indisponible — envoi sans coordonnées.";
+          console.log("Position indisponible au moment du submit.");
+        }
+      }
 
+      const now = new Date();
       const titre = titreInput.value.trim() || `Enregistrement`;
       const description = descriptionInput.value.trim() || `${titre} — ${now.toLocaleDateString()}`;
       const dureeSec = metadataBox.dataset.duree || ((endTime - startTime) / 1000).toFixed(1);
-
       const date = now.toLocaleDateString();
       const heure = now.toLocaleTimeString();
-
-      if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        ({coords}) => { position.lat = coords.latitude; position.lon = coords.longitude; },
-        () => {}, { enableHighAccuracy: true, maximumAge: 10_000, timeout: 5_000 }
-      );
-    }
 
       // Journal local
       data.push({
@@ -801,22 +842,21 @@ Si vous avez des questions à ce sujet, ou si vous souhaitez que l’un de vos e
           }
           statusEl.textContent = "Envoi vers Google Drive…";
 
+          const now2 = new Date();
+          const annee  = now2.getFullYear();
+          const mois   = String(now2.getMonth() + 1).padStart(2, "0");
+          const jour   = String(now2.getDate()).padStart(2, "0");
+          const heure2  = String(now2.getHours()).padStart(2, "0");
+          const minute = String(now2.getMinutes()).padStart(2, "0");
+          const seconde = String(now2.getSeconds()).padStart(2, "0");
 
-
-          const now = new Date();
-          const annee  = now.getFullYear();
-          const mois   = String(now.getMonth() + 1).padStart(2, "0");
-          const jour   = String(now.getDate()).padStart(2, "0");
-          const heure  = String(now.getHours()).padStart(2, "0");
-          const minute = String(now.getMinutes()).padStart(2, "0");
           // Titre nettoyé pour un nom de fichier
           const safeTitre = titre
             .normalize("NFD")                 // enlève les accents
             .replace(/[\u0300-\u036f]/g, "")
             .replace(/[^a-zA-Z0-9_-]/g, "_")
             .substring(0, 50) || "sans_titre";
-          const filename = `${annee}_${mois}_${jour}_${heure}_${minute}_${safeTitre}.wav`;
-
+          const filename = `${annee}_${mois}_${jour}_${heure2}_${minute}_${seconde}_${safeTitre}.wav`;
 
           fetch(SCRIPT_URL, {
             method: "POST",
@@ -830,103 +870,45 @@ Si vous avez des questions à ce sujet, ou si vous souhaitez que l’un de vos e
           .then(res => res.json())
           .then(result => {
             if (result.status === "success") {
-                async function googleSheets(values, spreadsheetId, sheetName, date = false) {
-  const payload = {
-    spreadsheetId: spreadsheetId,
-    sheetName: sheetName,
-    values: values,
-    addDate : date
-  };
+              // récupération des catégories sélectionnées
+              const checkboxes = document.querySelectorAll(".dropdown-menu input[type='checkbox']");
+              const selectedValues = [];
+              checkboxes.forEach(checkbox => { if (checkbox.checked) selectedValues.push(checkbox.value); });
+              const resultText = selectedValues.join("; ");
 
-  const data = encodeURIComponent(JSON.stringify(payload));
-  const body = `data=${data}`;
-
-  const url = 'https://script.google.com/macros/s/AKfycbzbNtW1cUxIFPFJuBF69O30OfaafAhPbjsYYXwtPeINICfWSpxh8jqUWtSbaV6nOvGW/exec';
-
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      },
-      body: body
-    });
-
-    const text = await res.text();
-    console.log('Réponse du script :', text);
-     closePageLoader();
-    return text;
-  } catch (err) {
-    console.error('Erreur lors de l\'envoi :', err);
-    closePageLoader();
-    return null;
-  }
-
-}
-
-
-
-
-  const checkboxes = document.querySelectorAll(".dropdown-menu input[type='checkbox']");
-  
-  // Créer un tableau pour stocker les valeurs sélectionnées
-  const selectedValues = [];
-  
-  // Parcourir toutes les cases à cocher
-  checkboxes.forEach(checkbox => {
-    if (checkbox.checked) {
-      // Si la case est cochée, ajouter sa valeur au tableau
-      selectedValues.push(checkbox.value);
-    }
-  });
-
-
-
-
-
-
-
-
-    // Créer le texte à afficher, avec des points-virgules séparant les valeurs
-    const resultText = selectedValues.join("; ");
-    
-
-
-
-
-
-
-
-
-
+              // Envoi vers Google Sheets (fonction googleSheets déjà définie dans ton code)
               googleSheets(
-                  [position.lat, position.lon, date, heure, dureeSec, titre, description, result.fileUrl, resultText],
-                  "16LhO82rFlzNwrnF6B64rKK91_Q7o0Cc9VhhuuJLu9eY",
-                  "Feuille 1"
+                [position.lat, position.lon, date, heure, dureeSec, titre, description, result.fileUrl, resultText],
+                "16LhO82rFlzNwrnF6B64rKK91_Q7o0Cc9VhhuuJLu9eY",
+                "Feuille 1"
               );
-
 
               statusEl.innerHTML = `Audio uploadé : <a href="${result.fileUrl}" target="_blank" rel="noopener">Ouvrir</a>`;
               // Reset léger
               titreInput.value = "";
               descriptionInput.value = "";
               metadataBox.style.display = "none";
+              closePageLoader();
             } else {
               statusEl.textContent = "❌ Erreur Apps Script : " + (result.message || "Inconnue");
+              closePageLoader();
             }
           })
           .catch(err => {
             console.error(err);
             statusEl.textContent = "❌ Erreur réseau : " + err;
+            closePageLoader();
           });
+
         } catch (e) {
           console.error(e);
           statusEl.textContent = "❌ Erreur lors de la préparation du fichier.";
+          closePageLoader();
         }
       };
       reader.readAsDataURL(lastAudioBlob);
-    
     };
+
 
     // Nettoyage audio quand on quitte la page
     window.addEventListener("beforeunload", () => {
