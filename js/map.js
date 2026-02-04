@@ -248,9 +248,8 @@ window.startPlayback = function(url, opts = {}, btn = null){
 
 
 const enableClustering = false; 
-
-
-const sheetUrl = 'https://corsproxy.io/?https://docs.google.com/spreadsheets/d/e/2PACX-1vTulnwNpL603TWBMjWH30TegQzb_QzyiCPsyzGrK2elI2b2cogHFI_cwZNV80WGiXqdgAAm8evssijQ/pub?output=tsv';
+// URL de ton Worker — attention au double https:// (corrigé)
+const sheetUrl = "https://ville-sonore.gael-maignan-trash.workers.dev/";
 
 let clips = [];
 
@@ -261,38 +260,97 @@ async function loadClips(tag = "") {
     console.log('sheet fetch status:', res.status, res.statusText);
 
     if (!res.ok) {
-      // enregistrer le corps d'erreur pour debug
       const body = await res.text().catch(()=>'<no body>');
       console.error('Erreur fetch sheet:', res.status, body.slice(0,800));
       clips = [];
       return;
     }
 
-    const tsvText = await res.text();
+    const txt = await res.text();
+    const start = (txt || '').trim().slice(0,80).toLowerCase();
 
-    // détecte si la réponse est du HTML (erreur courante si Google renvoie une page d'erreur)
-    const firstChunk = tsvText.trim().slice(0,50).toLowerCase();
-    if (firstChunk.startsWith('<') || firstChunk.includes('<!doctype')) {
-      console.error('La réponse reçue semble être du HTML (erreur d\'hôte ou d\'authent). Contenu:', tsvText.slice(0,800));
+    // Si la réponse semble être du HTML -> abort
+    if (start.startsWith('<') || start.includes('<!doctype') || start.includes('<html')) {
+      console.error('La réponse reçue semble être du HTML (erreur d\'hôte ou d\'authent). Contenu:', txt.slice(0,800));
       clips = [];
       return;
     }
 
-    const lines = tsvText.trim().split('\n').filter(l=>l.trim()!=='');
-    // si la première ligne contient "lat" ou "lon" -> header -> on skip
-    if (lines.length > 0 && /^lat/i.test(lines[0].split('\t')[0])) {
-      lines.shift(); // retirer l'en-tête
+    let rows = [];
+    // --- Cas 1 : gviz JS wrapper "google.visualization.Query.setResponse({...});" ---
+    if (txt.includes('google.visualization') || txt.match(/setResponse\s*\(/)) {
+      // retirer le wrapper JS et récupérer l'objet JSON
+      const jsonText = txt.replace(/^[^\(]*\(|\);?$/g, '');
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonText);
+      } catch(parseErr) {
+        console.error('Erreur parse JSON gviz:', parseErr, jsonText.slice(0,400));
+        clips = [];
+        return;
+      }
+      rows = (parsed.table && parsed.table.rows) ? parsed.table.rows : [];
+    }
+    // --- Cas 2 : JSON brut (ex: worker qui renvoie JSON) ---
+    else if (txt.trim().startsWith('{') || txt.trim().startsWith('[')) {
+      try {
+        const parsed = JSON.parse(txt);
+        // si structure gviz
+        if (parsed.table && parsed.table.rows) {
+          rows = parsed.table.rows;
+        } else if (Array.isArray(parsed)) {
+          // tableau simple de lignes (assume valeur déjà bien formée)
+          rows = parsed.map(r => ({ c: r }));
+        } else if (parsed.values) {
+          // Sheets API style values: array of arrays
+          rows = (parsed.values || []).map(r => ({ c: r.map(v => ({ v })) }));
+        } else {
+          console.warn('JSON reçu non attendu, inspecte parsed:', parsed);
+          rows = [];
+        }
+      } catch(err) {
+        console.error('Erreur parse JSON brut:', err);
+        clips = [];
+        return;
+      }
+    }
+    // --- Cas 3 : TSV brut ---
+    else if (txt.includes('\t')) {
+      const lines = txt.trim().split('\n').filter(l=>l.trim()!=='');
+      // skip header éventuellement
+      if (lines.length > 0 && /^lat/i.test(lines[0].split('\t')[0])) lines.shift();
+      rows = lines.map(line => {
+        const cols = line.split('\t');
+        return { c: cols.map(v => ({ v })) };
+      });
+    } else {
+      console.warn('Format de réponse non reconnu. Début:', txt.slice(0,200));
+      clips = [];
+      return;
     }
 
-    clips = lines.map(line => {
-      const cols = line.split('\t');
-      // garantir au moins 9 colonnes
-      while(cols.length < 9) cols.push('');
-      const [latStr, lonStr, date, heure, dureeStr, titre, description, lien, categories] = cols;
+    // mapping rows -> clips (on suppose l'ordre des colonnes: lat, lon, date, heure, duree, titre, description, lien, categories)
+    clips = rows.map(r => {
+      const c = r.c || [];
+      const get = i => {
+        const cell = c[i];
+        if (!cell) return '';
+        // dans certains cas cell.v existe, dans d'autres cell peut être une primitive (si on a transformé)
+        return (cell.v !== undefined && cell.v !== null) ? String(cell.v) : (typeof cell === 'string' ? cell : '');
+      };
+      const latStr = get(0);
+      const lonStr = get(1);
+      const date = get(2);
+      const heure = get(3);
+      const dureeStr = get(4);
+      const titre = get(5);
+      const description = get(6);
+      const lien = get(7);
+      const categories = get(8);
 
       return {
-        lat: latStr ? parseFloat(latStr.replace(',', '.')) : NaN,
-        lon: lonStr ? parseFloat(lonStr.replace(',', '.')) : NaN,
+        lat: latStr ? parseFloat(String(latStr).replace(',', '.')) : NaN,
+        lon: lonStr ? parseFloat(String(lonStr).replace(',', '.')) : NaN,
         date: (date || '').trim(),
         heure: (heure || '').trim(),
         duree: parseFloat(dureeStr) || 0,
@@ -315,6 +373,7 @@ async function loadClips(tag = "") {
     clips = [];
   }
 }
+
 
 
 // Fonction principale qui attend le chargement
