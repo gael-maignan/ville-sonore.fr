@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -580,6 +581,40 @@ Si vous avez des questions à ce sujet, ou si vous souhaitez que l’un de vos e
 
 
   <script>
+                    async function googleSheets(values, spreadsheetId, sheetName, date = false) {
+  const payload = {
+    spreadsheetId: spreadsheetId,
+    sheetName: sheetName,
+    values: values,
+    addDate : date
+  };
+
+  const data = encodeURIComponent(JSON.stringify(payload));
+  const body = `data=${data}`;
+
+  const url = 'https://script.google.com/macros/s/AKfycbzbNtW1cUxIFPFJuBF69O30OfaafAhPbjsYYXwtPeINICfWSpxh8jqUWtSbaV6nOvGW/exec';
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: body
+    });
+
+    const text = await res.text();
+    console.log('Réponse du script :', text);
+     closePageLoader();
+    return text;
+  } catch (err) {
+    console.error('Erreur lors de l\'envoi :', err);
+    closePageLoader();
+    return null;
+  }
+
+}
+
     /************ CONFIG À REMPLACER ************/
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxo4zANyxLOEUIX29T0t7-_PmVGTortQHktqDcZZOxr5or1cAy9dAV7kvWQZeSIueuZ/exec"; // <- ton URL Apps Script
     const FOLDER_ID  = "1NckhGzOgAJ8c8Aax2jR_nCuAxwSFEC44"; // <- ID du dossier Drive de destination
@@ -626,7 +661,6 @@ function getPosition(timeout = 7000) {
         position.lat = pos.coords.latitude;
         position.lon = pos.coords.longitude;
         positionObtained = true;
-        try { statusEl.textContent = "📍 Position récupérée."; } catch(e){/* statusEl peut ne pas exister encore */ }
         resolve(position);
       },
       (err) => {
