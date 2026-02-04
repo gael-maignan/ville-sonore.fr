@@ -129,7 +129,7 @@ async function main() {
         <div class="clip-meta">${clip.date} • ${clip.heure} • ${clip.duree}s</div>
         <div style="margin-top:8px">${clip.description || ''}</div>
         <div class="clip-controls mt-3">
-          <button class="btn play-latest" data-url="${normalizedLink(clip.lien)}">▶ Écouter</button>
+          <button class="btn play-latest" data-url="${audioViaWorker(normalizedLink(clip.lien))}">▶ Écouter</button>
         </div>
       `;
       container.appendChild(card);
@@ -147,6 +147,12 @@ async function main() {
   afficherDerniersAudios();
 }
 
+const AUDIO_WORKER_BASE = "https://ville-sonore.gael-maignan-trash.workers.dev/audio";
+
+function audioViaWorker(driveUrl){
+  if(!driveUrl) return driveUrl;
+  return `${AUDIO_WORKER_BASE}?url=${encodeURIComponent(driveUrl)}`;
+}
 function normalizedLink(url){
   if(!url) return url;
   if(url.includes('uc?export=download')) return url;

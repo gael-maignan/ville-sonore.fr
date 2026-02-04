@@ -16,6 +16,8 @@
   <!-- Tailwind via CDN pour prototype rapide -->
   <script src="https://cdn.tailwindcss.com"></script>
 
+  <script src="js/loader.js"></script>
+
   <script src="js/collections.js"></script>
   <script type="module" src="https://gael-mgn.github.io/js/log.js"></script>
   
@@ -491,6 +493,7 @@ nav a:hover::after {
   </div>
 
   <script>
+
   // Récupération de l'élément de menu déroulant
   const dropdownMenu = document.querySelector('.dropdown-menu');
 
@@ -498,7 +501,7 @@ nav a:hover::after {
   dropdownMenu.innerHTML = '';
 
   // Génère dynamiquement les cases à cocher
-  collections.forEach(collection => {
+  collections.filter(collection => collection.id !== "all").forEach(collection => {
     const label = document.createElement('label');
     
     // Tronquer la description à 50 caractères
@@ -756,6 +759,7 @@ Si vous avez des questions à ce sujet, ou si vous souhaitez que l’un de vos e
         return;
       }
 
+      openPageLoader("Envoi en cours...");
 
       const now = new Date();
 
@@ -792,13 +796,32 @@ Si vous avez des questions à ce sujet, ou si vous souhaitez que l’un de vos e
           const base64Data = (reader.result || "").toString().split(',')[1];
           if (!base64Data) {
             statusEl.textContent = "❌ Conversion Base64 échouée.";
+            closePageLoader();
             return;
           }
           statusEl.textContent = "Envoi vers Google Drive…";
+
+
+
+          const now = new Date();
+          const annee  = now.getFullYear();
+          const mois   = String(now.getMonth() + 1).padStart(2, "0");
+          const jour   = String(now.getDate()).padStart(2, "0");
+          const heure  = String(now.getHours()).padStart(2, "0");
+          const minute = String(now.getMinutes()).padStart(2, "0");
+          // Titre nettoyé pour un nom de fichier
+          const safeTitre = titre
+            .normalize("NFD")                 // enlève les accents
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-zA-Z0-9_-]/g, "_")
+            .substring(0, 50) || "sans_titre";
+          const filename = `${annee}_${mois}_${jour}_${heure}_${minute}_${safeTitre}.wav`;
+
+
           fetch(SCRIPT_URL, {
             method: "POST",
             body: new URLSearchParams({
-              filename: `enregistrement_${Date.now()}.wav`,
+              filename: filename,
               mimetype: "audio/wav",
               data: base64Data,
               folderId: FOLDER_ID
@@ -831,11 +854,14 @@ Si vous avez des questions à ce sujet, ou si vous souhaitez que l’un de vos e
 
     const text = await res.text();
     console.log('Réponse du script :', text);
+     closePageLoader();
     return text;
   } catch (err) {
     console.error('Erreur lors de l\'envoi :', err);
+    closePageLoader();
     return null;
   }
+
 }
 
 
@@ -899,6 +925,7 @@ Si vous avez des questions à ce sujet, ou si vous souhaitez que l’un de vos e
         }
       };
       reader.readAsDataURL(lastAudioBlob);
+    
     };
 
     // Nettoyage audio quand on quitte la page
