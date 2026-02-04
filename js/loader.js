@@ -14,7 +14,7 @@
           align-items: center;
           justify-content: center;
           background: rgba(0,0,0,0.45);
-          color: black;
+          color: #D3CDE4;
           z-index: 999999;
           transition: opacity 320ms ease, visibility 320ms ease;
           opacity: 1;
@@ -31,15 +31,15 @@
           text-align: center;
           padding: 18px 26px;
           border-radius: 10px;
-          background: white;
+          background: rgba(21,18,33,1);
           max-width: 90%;
         box-shadow:0 10px 10px rgba(2,6,23,0.2); 
         }
         #${LOADER_ID} .cpl__spinner {
           width: 48px;
           height: 48px;
-          border: 6px solid rgba(255,107,0,1);
-          border-top-color: #ffffff;
+          border: 6px solid rgba(21,18,33,1);
+          border-top-color: #D3CDE4;
           border-radius: 50%;
           display: inline-block;
           margin-bottom: 12px;
