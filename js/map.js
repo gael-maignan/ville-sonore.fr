@@ -1,5 +1,15 @@
+
+const AUDIO_WORKER_BASE = "https://ville-sonore.gael-maignan-trash.workers.dev/audio";
+
+function audioViaWorker(driveUrl){
+  if(!driveUrl) return driveUrl;
+  return `${AUDIO_WORKER_BASE}?url=${encodeURIComponent(driveUrl)}`;
+}
+
 /* -------- Helpers de chargement pour boutons + loader mobile title -------- */
 (function(){
+
+
 
   const audio = document.getElementById('globalAudio');
 
@@ -376,6 +386,7 @@ async function loadClips(tag = "") {
 
 
 
+
 // Fonction principale qui attend le chargement
 async function map(tag = "") {
 
@@ -418,7 +429,7 @@ derniers.forEach((clip, idx) => {
   const btn = document.createElement('button');
   btn.className = 'btn play-latest';
   btn.type = 'button';
-  btn.dataset.url = normalizedLink(clip.lien);
+  btn.dataset.url = audioViaWorker(normalizedLink(clip.lien));
   // stocker meta utiles pour le player
   btn.dataset.title = clip.titre || '';
   btn.dataset.meta = `${clip.date || ''} • ${clip.heure || ''} • ${clip.duree ? Math.round(clip.duree*10)/10 + 's' : ''}`.trim();
@@ -683,7 +694,7 @@ container.querySelectorAll('.play').forEach(btn=>{
 function playClip(idx, btn = null){
   const clip = clips[idx];
   if(!clip) return;
-  const url = normalizedLink(clip.lien);
+  const url = audioViaWorker(normalizedLink(clip.lien));
   currentId = idx;
 
   // update mobile player UI
