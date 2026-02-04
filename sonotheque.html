@@ -77,28 +77,140 @@
   <audio id="globalAudio" crossorigin="anonymous"></audio>
 
   <script>
-const sheetUrl = 'https://corsproxy.io/?https://docs.google.com/spreadsheets/d/16LhO82rFlzNwrnF6B64rKK91_Q7o0Cc9VhhuuJLu9eY/export?format=tsv&id=16LhO82rFlzNwrnF6B64rKK91_Q7o0Cc9VhhuuJLu9eY&gid=0';
+    const AUDIO_WORKER_BASE = "https://ville-sonore.gael-maignan-trash.workers.dev/audio";
+
+function audioViaWorker(driveUrl){
+  if(!driveUrl) return driveUrl;
+  return `${AUDIO_WORKER_BASE}?url=${encodeURIComponent(driveUrl)}`;
+}
+
+
+const sheetUrl = "https://ville-sonore.gael-maignan-trash.workers.dev/";
+
+
+
 
 let clips = [];
 
-async function loadClips() {
-  const res = await fetch(sheetUrl);
-  const tsvText = await res.text();
+async function loadClips(tag = "") {
+  try {
+    console.log('fetching sheetUrl →', sheetUrl);
+    const res = await fetch(sheetUrl);
+    console.log('sheet fetch status:', res.status, res.statusText);
 
-  const lines = tsvText.trim().split('\n');
+    if (!res.ok) {
+      const body = await res.text().catch(()=>'<no body>');
+      console.error('Erreur fetch sheet:', res.status, body.slice(0,800));
+      clips = [];
+      return;
+    }
 
-  clips = lines.map(line => {
-    const [latStr, lonStr, date, heure, dureeStr, titre, description, lien, categories] = line.split('\t');
-    return {
-      date: date?.trim() || '',
-      heure: heure?.trim() || '',
-      duree: parseFloat(dureeStr),
-      titre: titre?.trim() || '',
-      description: description?.trim() || '',
-      lien: lien?.trim() || '',
-      categories: categories ? stringToArray(categories.trim()) : []
-    };
-  });
+    const txt = await res.text();
+    const start = (txt || '').trim().slice(0,80).toLowerCase();
+
+    // Si la réponse semble être du HTML -> abort
+    if (start.startsWith('<') || start.includes('<!doctype') || start.includes('<html')) {
+      console.error('La réponse reçue semble être du HTML (erreur d\'hôte ou d\'authent). Contenu:', txt.slice(0,800));
+      clips = [];
+      return;
+    }
+
+    let rows = [];
+    // --- Cas 1 : gviz JS wrapper "google.visualization.Query.setResponse({...});" ---
+    if (txt.includes('google.visualization') || txt.match(/setResponse\s*\(/)) {
+      // retirer le wrapper JS et récupérer l'objet JSON
+      const jsonText = txt.replace(/^[^\(]*\(|\);?$/g, '');
+      let parsed;
+      try {
+        parsed = JSON.parse(jsonText);
+      } catch(parseErr) {
+        console.error('Erreur parse JSON gviz:', parseErr, jsonText.slice(0,400));
+        clips = [];
+        return;
+      }
+      rows = (parsed.table && parsed.table.rows) ? parsed.table.rows : [];
+    }
+    // --- Cas 2 : JSON brut (ex: worker qui renvoie JSON) ---
+    else if (txt.trim().startsWith('{') || txt.trim().startsWith('[')) {
+      try {
+        const parsed = JSON.parse(txt);
+        // si structure gviz
+        if (parsed.table && parsed.table.rows) {
+          rows = parsed.table.rows;
+        } else if (Array.isArray(parsed)) {
+          // tableau simple de lignes (assume valeur déjà bien formée)
+          rows = parsed.map(r => ({ c: r }));
+        } else if (parsed.values) {
+          // Sheets API style values: array of arrays
+          rows = (parsed.values || []).map(r => ({ c: r.map(v => ({ v })) }));
+        } else {
+          console.warn('JSON reçu non attendu, inspecte parsed:', parsed);
+          rows = [];
+        }
+      } catch(err) {
+        console.error('Erreur parse JSON brut:', err);
+        clips = [];
+        return;
+      }
+    }
+    // --- Cas 3 : TSV brut ---
+    else if (txt.includes('\t')) {
+      const lines = txt.trim().split('\n').filter(l=>l.trim()!=='');
+      // skip header éventuellement
+      if (lines.length > 0 && /^lat/i.test(lines[0].split('\t')[0])) lines.shift();
+      rows = lines.map(line => {
+        const cols = line.split('\t');
+        return { c: cols.map(v => ({ v })) };
+      });
+    } else {
+      console.warn('Format de réponse non reconnu. Début:', txt.slice(0,200));
+      clips = [];
+      return;
+    }
+
+    // mapping rows -> clips (on suppose l'ordre des colonnes: lat, lon, date, heure, duree, titre, description, lien, categories)
+    clips = rows.map(r => {
+      const c = r.c || [];
+      const get = i => {
+        const cell = c[i];
+        if (!cell) return '';
+        // dans certains cas cell.v existe, dans d'autres cell peut être une primitive (si on a transformé)
+        return (cell.v !== undefined && cell.v !== null) ? String(cell.v) : (typeof cell === 'string' ? cell : '');
+      };
+      const latStr = get(0);
+      const lonStr = get(1);
+      const date = get(2);
+      const heure = get(3);
+      const dureeStr = get(4);
+      const titre = get(5);
+      const description = get(6);
+      const lien = get(7);
+      const categories = get(8);
+
+      return {
+        lat: latStr ? parseFloat(String(latStr).replace(',', '.')) : NaN,
+        lon: lonStr ? parseFloat(String(lonStr).replace(',', '.')) : NaN,
+        date: (date || '').trim(),
+        heure: (heure || '').trim(),
+        duree: parseFloat(dureeStr) || 0,
+        titre: (titre || '').trim(),
+        description: (description || '').trim(),
+        lien: (lien || '').trim(),
+        categories: (categories || '').trim() ? stringToArray(categories.trim()) : []
+      };
+    });
+
+    // filtrage par tag (si applicable)
+    if (typeof tag === 'string' && tag.length > 0 && tag !== 'all') {
+      clips = clips.filter(c => c.categories.some(cat => cat.toLowerCase() === tag));
+    }
+
+    console.log('Clips chargés:', clips.length);
+
+  } catch (err) {
+    console.error('Erreur loadClips:', err);
+    clips = [];
+  }
 }
 
 async function main() {
@@ -147,17 +259,11 @@ async function main() {
   afficherDerniersAudios();
 }
 
-const AUDIO_WORKER_BASE = "https://ville-sonore.gael-maignan-trash.workers.dev/audio";
-
-function audioViaWorker(driveUrl){
-  if(!driveUrl) return driveUrl;
-  return `${AUDIO_WORKER_BASE}?url=${encodeURIComponent(driveUrl)}`;
-}
 function normalizedLink(url){
   if(!url) return url;
   if(url.includes('uc?export=download')) return url;
   const m = url.match(/\/d\/([a-zA-Z0-9_-]+)(?:\/|$)/);
-  if(m && m[1]) return `https://corsproxy.io/?https://drive.google.com/uc?export=download&id=${m[1]}`;
+  if(m && m[1]) return `https://drive.google.com/uc?export=download&id=${m[1]}`;
   return url;
 }
 
