@@ -2,8 +2,11 @@
 (function(){
 
   const audio = document.getElementById('globalAudio');
+
   // éviter préchargement automatique : on charge à la demande
-  if(audio) audio.preload = 'none';
+  if(audio){ audio.preload = 'none';
+  audio.removeAttribute('crossorigin');
+}
 
   let activeLoadingButton = null; // bouton qui affiche actuellement le spinner
 
@@ -247,37 +250,72 @@ window.startPlayback = function(url, opts = {}, btn = null){
 const enableClustering = false; 
 
 
-
-const sheetUrl = 'https://corsproxy.io/?https://docs.google.com/spreadsheets/d/16LhO82rFlzNwrnF6B64rKK91_Q7o0Cc9VhhuuJLu9eY/export?format=tsv&id=16LhO82rFlzNwrnF6B64rKK91_Q7o0Cc9VhhuuJLu9eY&gid=0';
+const sheetUrl = 'https://corsproxy.io/?https://docs.google.com/spreadsheets/d/e/2PACX-1vTulnwNpL603TWBMjWH30TegQzb_QzyiCPsyzGrK2elI2b2cogHFI_cwZNV80WGiXqdgAAm8evssijQ/pub?output=tsv';
 
 let clips = [];
 
-async function loadClips(tag) {
-  const res = await fetch(sheetUrl);
-  const tsvText = await res.text();
+async function loadClips(tag = "") {
+  try {
+    console.log('fetching sheetUrl →', sheetUrl);
+    const res = await fetch(sheetUrl);
+    console.log('sheet fetch status:', res.status, res.statusText);
 
-  const lines = tsvText.trim().split('\n');
+    if (!res.ok) {
+      // enregistrer le corps d'erreur pour debug
+      const body = await res.text().catch(()=>'<no body>');
+      console.error('Erreur fetch sheet:', res.status, body.slice(0,800));
+      clips = [];
+      return;
+    }
 
-  clips = lines.map(line => {
-    const [latStr, lonStr, date, heure, dureeStr, titre, description, lien, categories] = line.split('\t');
+    const tsvText = await res.text();
 
-    return {
-      lat: latStr && typeof latStr === 'string' ? parseFloat(latStr.replace(',', '.')) : NaN,
-lon: lonStr && typeof lonStr === 'string' ? parseFloat(lonStr.replace(',', '.')) : NaN,
-      date: (date && typeof date === 'string') ? date.trim() : '',
-heure: (heure && typeof heure === 'string') ? heure.trim() : '',
-duree: parseFloat(dureeStr),
-titre: (titre && typeof titre === 'string') ? titre.trim() : '',
-description: (description && typeof description === 'string') ? description.trim() : '',
-lien: (lien && typeof lien === 'string') ? lien.trim() : '',
-categories: (categories && typeof categories === 'string') ? stringToArray(categories.trim()) : []
-    };
-  });
+    // détecte si la réponse est du HTML (erreur courante si Google renvoie une page d'erreur)
+    const firstChunk = tsvText.trim().slice(0,50).toLowerCase();
+    if (firstChunk.startsWith('<') || firstChunk.includes('<!doctype')) {
+      console.error('La réponse reçue semble être du HTML (erreur d\'hôte ou d\'authent). Contenu:', tsvText.slice(0,800));
+      clips = [];
+      return;
+    }
 
-  if(tag.length > 0 && tag!="all"){
-     clips = clips.filter(c => c.categories.some(cat => cat.toLowerCase() === tag)); 
+    const lines = tsvText.trim().split('\n').filter(l=>l.trim()!=='');
+    // si la première ligne contient "lat" ou "lon" -> header -> on skip
+    if (lines.length > 0 && /^lat/i.test(lines[0].split('\t')[0])) {
+      lines.shift(); // retirer l'en-tête
+    }
+
+    clips = lines.map(line => {
+      const cols = line.split('\t');
+      // garantir au moins 9 colonnes
+      while(cols.length < 9) cols.push('');
+      const [latStr, lonStr, date, heure, dureeStr, titre, description, lien, categories] = cols;
+
+      return {
+        lat: latStr ? parseFloat(latStr.replace(',', '.')) : NaN,
+        lon: lonStr ? parseFloat(lonStr.replace(',', '.')) : NaN,
+        date: (date || '').trim(),
+        heure: (heure || '').trim(),
+        duree: parseFloat(dureeStr) || 0,
+        titre: (titre || '').trim(),
+        description: (description || '').trim(),
+        lien: (lien || '').trim(),
+        categories: (categories || '').trim() ? stringToArray(categories.trim()) : []
+      };
+    });
+
+    // filtrage par tag (si applicable)
+    if (typeof tag === 'string' && tag.length > 0 && tag !== 'all') {
+      clips = clips.filter(c => c.categories.some(cat => cat.toLowerCase() === tag));
+    }
+
+    console.log('Clips chargés:', clips.length);
+
+  } catch (err) {
+    console.error('Erreur loadClips:', err);
+    clips = [];
   }
 }
+
 
 // Fonction principale qui attend le chargement
 async function map(tag = "") {
@@ -385,15 +423,15 @@ document.querySelectorAll('.play-latest').forEach(btn => {
       }
     })();
 
-    function normalizedLink(url){
-      if(!url) return url;
-      // if it's already the uc?export=download form, return
-      if(url.includes('uc?export=download')) return url;
-      // match /d/<id>/ or /d/<id>$
-      const m = url.match(/\/d\/([a-zA-Z0-9_-]+)(?:\/|$)/);
-      if(m && m[1]) return `https://corsproxy.io/?https://drive.google.com/uc?export=download&id=${m[1]}`;
-      // fallback to leaving the URL as-is
-      return url;}
+function normalizedLink(url){
+  if(!url) return url;
+  // if it's already the uc?export=download form, return
+  if(url.includes('uc?export=download')) return url;
+  const m = url.match(/\/d\/([a-zA-Z0-9_-]+)(?:\/|$)/);
+  if(m && m[1]) return `https://drive.google.com/uc?export=download&id=${m[1]}`;
+  return url;
+}
+
 
     function initMap() {
       try {
