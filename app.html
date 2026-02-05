@@ -536,6 +536,134 @@
   </div>
 
   <script>
+  // --- Supprime l'appel initMic() au chargement et la getPosition au DOMContentLoaded ---
+
+  async function initMicOnce() {
+    // Si déjà initialisé, renvoie vrai
+    if (audioStream && audioContext && sourceNode && processorNode) return true;
+
+    try {
+      // Demande la permission et récupère le flux AUDIO (fait apparaître le prompt)
+      audioStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          // tu peux ajuster les contraintes, ici minimal pour compatibilité
+          sampleRate: 48000,
+          channelCount: 1,
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        }
+      });
+
+      // Crée l'AudioContext après le geste utilisateur
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      sampleRate = audioContext.sampleRate || 44100;
+
+      // Source / processor
+      sourceNode = audioContext.createMediaStreamSource(audioStream);
+
+      // ScriptProcessor est ancien, mais fonctionne ; taille 4096 est souvent plus safe sur mobiles
+      processorNode = audioContext.createScriptProcessor(4096, 1, 1);
+
+      // Gain à zéro pour éviter monitoring audible
+      silentGain = audioContext.createGain();
+      silentGain.gain.value = 0;
+
+      processorNode.onaudioprocess = e => {
+        if (!recording) return;
+        const channelData = e.inputBuffer.getChannelData(0);
+        audioBufferData.push(new Float32Array(channelData));
+      };
+
+      // Chaîne
+      sourceNode.connect(processorNode);
+      processorNode.connect(silentGain);
+      silentGain.connect(audioContext.destination);
+
+      return true;
+    } catch (err) {
+      console.error("initMicOnce error:", err);
+      // Affichage utilisateur adapté
+      if (err && (err.name === "NotAllowedError" || err.name === "SecurityError")) {
+        statusEl.textContent = "❌ Accès au micro refusé. Autorise le micro dans les paramètres de l'app.";
+      } else {
+        statusEl.textContent = "❌ Impossible d'initialiser le micro sur cet appareil.";
+      }
+      // Nettoyage préventif
+      try {
+        if (audioStream) audioStream.getTracks().forEach(t => t.stop());
+        if (audioContext) { audioContext.close().catch(()=>{}); }
+      } catch(e){}
+      audioStream = null; audioContext = null; sourceNode = null; processorNode = null; silentGain = null;
+      return false;
+    }
+  }
+
+  // Déclenchement d'enregistrement : crée l'audio seulement au clic (geste utilisateur)
+  startBtn.onclick = async () => {
+    startBtn.disabled = true;
+    statusEl.textContent = "Préparation du micro…";
+    const ok = await initMicOnce();
+    if (!ok) {
+      startBtn.disabled = false;
+      return;
+    }
+
+    // Démarre l'enregistrement
+    audioBufferData = [];
+    recording = true;
+    startTime = Date.now();
+    stopBtn.disabled = false;
+    metadataBox.style.display = "none";
+    lastAudioBlob = null;
+    statusEl.textContent = "Enregistrement en cours...";
+  };
+
+  // stopBtn reste identique, mais on s'assure de détacher proprement
+  stopBtn.onclick = () => {
+    if (!recording) return;
+    recording = false;
+    endTime = Date.now();
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+
+    // Merge des chunks (tel que tu as déjà)
+    const totalLength = audioBufferData.reduce((acc, cur) => acc + cur.length, 0);
+    if (totalLength === 0) {
+      statusEl.textContent = "⚠️ Aucun échantillon capturé.";
+      return;
+    }
+    const merged = new Float32Array(totalLength);
+    let offset = 0;
+    for (const chunk of audioBufferData) { merged.set(chunk, offset); offset += chunk.length; }
+
+    const wavBuffer = writeWAV(merged, sampleRate);
+    lastAudioBlob = new Blob([wavBuffer], { type: "audio/wav" });
+    audioPlayback.src = URL.createObjectURL(lastAudioBlob);
+    const dureeSec = ((endTime - startTime) / 1000).toFixed(1);
+    metadataBox.dataset.duree = dureeSec;
+    metadataBox.style.display = "flex";
+    statusEl.textContent = `Fichier WAV prêt (${dureeSec}s). Renseignez les infos puis "Soumettre".`;
+  };
+
+  // Supprime ou commente l'appel automatique getPosition au DOMContentLoaded dans ton code.
+  // Conserve la tentative de récupération de position lors du submit (tu l'as déjà fait) :
+  // au submit : si !positionObtained -> getPosition(...) (ok)
+
+  // Nettoyage audio quand on quitte la page
+  window.addEventListener("beforeunload", () => {
+    try {
+      if (processorNode) processorNode.disconnect();
+      if (silentGain) silentGain.disconnect();
+      if (sourceNode) sourceNode.disconnect();
+      if (audioContext) audioContext.close();
+      if (audioStream) audioStream.getTracks().forEach(t => t.stop());
+    } catch (e) { console.warn(e); }
+  });
+</script>
+
+
+  <script>
 
   // Récupération de l'élément de menu déroulant
   const dropdownMenu = document.querySelector('.dropdown-menu');
@@ -767,7 +895,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
-    initMic();
 
      // Journal local
     const data = [];
