@@ -1,0 +1,993 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>La Ville Sonore - Contribuer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="keywords" content="La ville sonore, cartographie sonore, contribuer, participatif, cartographie, son, Gaël Maignan">
+  <meta name="description" content="Vous aussi, contribuez à cette cartographie sonore de l'espace urbain !">
+
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600&display=swap" rel="stylesheet">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Tailwind via CDN pour prototype rapide -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <script src="js/loader.js"></script>
+
+  <script src="js/collections.js"></script>
+  <script type="module" src="https://gael-mgn.github.io/js/log.js"></script>
+  
+  <link rel="stylesheet" href="style/main.css">
+
+  <link rel="icon" href="logo.png" type="image/x-icon">
+
+
+</head>
+<body>
+    <style>
+  :root {
+    --brand-bg: #151221;
+    --brand-text: #D3CDE4;
+    --brand-accent: #762B84;
+    --muted: rgba(194,188,215,0.85);
+  }
+
+  /* Reset / base */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    height: 100%;
+    margin: 0;
+    font-family: 'Outfit', sans-serif;
+    background-color: var(--brand-bg); /* fond uniforme */
+    color: var(--brand-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  a { color: #C2BCD7; }
+
+  /* Main layout : permet de pousser le bas de page */
+  main {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .page-inner {
+    flex: 1; /* occupe l'espace disponible avant #nouveautes */
+  }
+
+  /* --- Controls / boutons --- */
+  .controls {
+    display: flex;
+    gap: 15px;
+    margin: 20px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  button {
+    padding: 12px 26px;
+    border: none;
+    border-radius: 99px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    transition: transform 0.15s ease, box-shadow 0.3s ease, background 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    background: transparent;
+    color: var(--brand-text);
+  }
+  button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+  button:active { transform: scale(0.96); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  #startBtn {
+    background: linear-gradient(135deg, var(--brand-accent), #9d44b8);
+    color: white;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 200px;
+    text-align: center;
+  }
+  #stopBtn {
+    color: white;
+    background: transparent;
+    padding: 12px 26px;
+    border: 3px solid var(--brand-accent);
+    border-radius: 99px;
+  }
+
+  #status {
+    margin: 10px 0;
+    font-weight: 700;
+    text-align: center;
+    color: var(--muted);
+    min-height: 1.5em;
+  }
+
+  /* --- Metadata box --- */
+  .metadata-box {
+    display: none;               /* contrôlé par JS */
+    flex-direction: column;
+    gap: 16px;
+    background: linear-gradient(145deg, rgba(30,30,30,0.98), rgba(45,45,45,0.98));
+    border-radius: 16px;
+    padding: 24px;
+    margin: 20px auto 0;
+    width: 90%;
+    max-width: 460px;
+    box-shadow: 0 6px 25px rgba(0,0,0,0.6);
+    animation: fadeIn 0.4s ease;
+    font-family: 'Outfit', sans-serif;
+  }
+
+  .metadata-box label {
+    font-weight: 600;
+    font-size: 15px;
+    color: #e4e4e4;
+  }
+
+  .metadata-box input[type="text"],
+  .metadata-box textarea {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 15px;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    background: #1e1e1e;
+    color: #f8f8f8;
+    transition: all 0.25s ease;
+    outline: none;
+    box-sizing: border-box;
+    font-family: 'Outfit', sans-serif;
+  }
+
+  .metadata-box input[type="text"]:focus,
+  .metadata-box textarea:focus {
+    border-color: var(--muted);
+    box-shadow: 0 0 4px rgba(194, 188, 215, 0.25);
+    background: #262626;
+  }
+
+  .metadata-box textarea { resize: vertical; min-height: 80px; }
+
+  .metadata-box button {
+    background: linear-gradient(135deg, var(--brand-accent), #9d44b8);
+    color: white;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 500;
+    border: none;
+    border-radius: 99px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    letter-spacing: 0.5px;
+  }
+  .metadata-box button:hover {
+    background: linear-gradient(135deg, #8b35a0, #b75cd2);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(183, 92, 210, 0.25);
+  }
+
+  .metadata-box audio {
+    margin-top: 8px;
+    width: 90%;
+    margin-left: auto;
+    margin-right: auto;
+    border-radius: 8px;
+    padding: 6px;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* --- Dropdown --- */
+  .dropdown { position: relative; width: 100%; font-size: 15px; user-select: none; }
+  .dropdown-toggle {
+    background: #1e1e1e;
+    color: #f8f8f8;
+    padding: 12px 14px;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .dropdown-toggle::after { content: "▾"; font-size: 14px; color: #bbb; margin-left: 8px; transition: transform 0.25s ease; }
+  .dropdown.open .dropdown-toggle::after { transform: rotate(-180deg); }
+
+  .dropdown-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    border-radius: 12px;
+    padding: 8px 0;
+    z-index: 9999;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+    max-height: 220px;
+    overflow-y: auto;
+    opacity: 0;
+    transform: translateY(-5px);
+    pointer-events: none;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+  }
+  .dropdown.open .dropdown-menu { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+  .dropdown-menu label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-weight: 400;
+    color: #e4e4e4;
+  }
+  .dropdown-menu label:hover { background: rgba(255,255,255,0.03); }
+  .dropdown-menu input[type="checkbox"] { accent-color: #9d44b8; cursor: pointer; }
+
+  /* --- Bas de page / uniformité --- */
+  #nouveautes {
+    margin-top: 2rem;
+    background-color: var(--brand-bg);
+    color: var(--brand-text);
+    padding: 3rem 1rem;
+    border-top: 1px solid rgba(255,255,255,0.03);
+    text-align: center;
+    font-size: 0.9rem;
+  }
+
+  /* Petit réglage responsive : si tu veux cacher des éléments sur mobile, .no-mobile est masqué sous 768px */
+  @media (max-width: 767px) {
+    .no-mobile { display: none; }
+  }
+
+  /* Ajustements mobiles */
+  @media (max-width: 600px) {
+    .metadata-box { padding: 18px; gap: 14px; }
+    .metadata-box button { font-size: 14px; padding: 10px; }
+    #startBtn { min-width: 140px; padding: 10px 14px; }
+  }
+  </style>
+
+
+<main>
+
+
+
+
+
+  <div style="max-width:1000px; text-align: center; margin: auto;">
+
+      <h1 class="text-4xl mt-20" style="font-weight:600;">La Ville Sonore</h1>
+
+  <p style="color: #C2BCD7; padding: 1rem;">Vous aussi, contribuez à cette cartographie sonore de l'espace urbain !</p>
+    
+  </div>
+
+
+
+
+  <div class="controls">
+   <button id="startBtn">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+    <path d="M8 5v14l11-7z"/>
+  </svg>
+  <span>COMMENCER</span>
+</button>
+
+<style>
+#startBtn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;        /* alignement vertical */
+  justify-content: center;    /* alignement horizontal */
+  gap: 6px;
+  font-family: 'Outfit', sans-serif;
+  padding: 10px 20px;
+  color: white;
+  border: none;
+  border-radius: 99px;
+  cursor: pointer;
+  min-width: 200px;           /* optionnel : largeur fixe pour montrer le centrage */
+  text-align: center;
+}
+
+#startBtn svg {
+  display: block;
+}
+</style>
+
+    <button id="stopBtn" disabled>ARRÊTER</button>
+  </div>
+
+  <p id="status"></p>
+<style>
+/* --- Zone formulaire redesign --- */
+.metadata-box {
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  background: linear-gradient(145deg, rgba(30, 30, 30, 0.98), rgba(45, 45, 45, 0.98));
+  border-radius: 16px;
+  padding: 24px;
+  margin: 20px auto 0;
+  width: 90%;
+  max-width: 460px;
+  box-shadow: 0 6px 25px rgba(0,0,0,0.6);
+  animation: fadeIn 0.4s ease;
+  font-family: 'Outfit', sans-serif;
+}
+
+.metadata-box label {
+  font-weight: 600;
+  font-size: 15px;
+  color: #e4e4e4;
+}
+
+.metadata-box #titreInput,
+.metadata-box textarea {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  border: 1px solid #3a3a3a;
+  border-radius: 10px;
+  background: #1e1e1e;
+  color: #f8f8f8;
+  transition: all 0.25s ease;
+  outline: none;
+  box-sizing: border-box; /* ✅ Empêche le dépassement */
+  font-family: 'Outfit', sans-serif;
+}
+
+.metadata-box input:focus,
+.metadata-box textarea:focus {
+  border-color: #C2BCD7;
+  box-shadow: 0 0 4px rgba(194, 188, 215, 0.6);
+  background: #262626;
+}
+
+.metadata-box textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.metadata-box button {
+  background: linear-gradient(135deg, #762B84, #9d44b8);
+  color: white;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: 'Outfit', sans-serif;
+  border: none;
+  border-radius: 99px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  letter-spacing: 0.5px;
+}
+
+.metadata-box button:hover {
+  background: linear-gradient(135deg, #8b35a0, #b75cd2);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(183, 92, 210, 0.4);
+}
+
+/* --- Audio --- */
+.metadata-box audio {
+  margin-top: 8px;
+  
+  width: 90%;
+  margin: auto;
+  border-radius: 8px;
+  padding: 6px;
+}
+
+/* --- Animations --- */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- Mobile --- */
+@media (max-width: 600px) {
+  .metadata-box {
+    padding: 18px;
+    gap: 14px;
+  }
+  .metadata-box button {
+    font-size: 14px;
+    padding: 10px;
+  }
+}
+
+
+
+</style>
+
+
+
+
+<style>
+
+/* --- Dropdown --- */
+.dropdown {
+  position: relative;
+  width: 100%;
+  font-size: 15px;
+  user-select: none;
+}
+
+.dropdown-toggle {
+  background: #1e1e1e;
+  color: #f8f8f8;
+  padding: 12px 14px;
+  border: 1px solid #3a3a3a;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dropdown-toggle::after {
+  content: "▾"; /* petite flèche */
+  font-size: 14px;
+  color: #bbb;
+  margin-left: 8px;
+  transition: transform 0.25s ease;
+}
+
+.dropdown.open .dropdown-toggle::after {
+  transform: rotate(-180deg);
+}
+
+.dropdown-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 12px;
+  padding: 8px 0;
+  z-index: 20;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.6);
+  max-height: 220px;         /* ✅ défilement si trop d'options */
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateY(-5px);
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.dropdown.open .dropdown-menu {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.dropdown-menu label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-weight: 400;
+  color: #e4e4e4;
+}
+
+.dropdown-menu label:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+.dropdown-menu input[type="checkbox"] {
+  accent-color: #9d44b8;
+  cursor: pointer;
+}
+
+
+</style>
+
+<div id="metadataBox" class="metadata-box">
+  <label for="titreInput">Titre :</label>
+  <input type="text" id="titreInput" placeholder="Titre de l'enregistrement (optionnel)">
+
+  <label for="descriptionInput">Description :</label>
+  <textarea id="descriptionInput" rows="3" placeholder="Description (optionnel)"></textarea>
+
+<label>Catégories :</label>
+  <div class="dropdown">
+    <div class="dropdown-toggle" id="dropdownToggle">Sélectionner des catégories</div>
+    <div class="dropdown-menu">
+    </div>
+  </div>
+
+  <script>
+
+  // Récupération de l'élément de menu déroulant
+  const dropdownMenu = document.querySelector('.dropdown-menu');
+
+  // Vide le contenu existant
+  dropdownMenu.innerHTML = '';
+
+  // Génère dynamiquement les cases à cocher
+  collections.filter(collection => collection.id !== "all").forEach(collection => {
+    const label = document.createElement('label');
+    
+    // Tronquer la description à 50 caractères
+    const description = collection.description 
+      ? collection.description.substring(0, 100) + (collection.description.length > 100 ? "..." : "")
+      : "";
+
+    label.innerHTML = `
+      <div>
+        <input type="checkbox" value="${collection.id}"> 
+        <strong>${collection.titre}</strong><br>
+        <small style="color:#aaa;font-size:13px;">${description}</small>
+      </div>
+    `;
+    
+    dropdownMenu.appendChild(label);
+  });
+</script>
+
+
+  <audio id="audioPlayback" controls></audio>
+
+  <button id="submitBtn">SOUMETTRE</button>
+
+</div>
+
+
+<section id="nouveautes" class="max-w-6xl mx-auto px-6 py-6">
+  <h2 class="text-3xl font-bold mb-4">À propos des contributions</h2>
+<p>Chaque contribution à La Ville Sonore est recueillie de manière anonyme : aucun nom ni aucune information personnelle ne sera publié avec votre enregistrement.</p>
+<p>
+En soumettant un fichier audio, vous acceptez que celui-ci soit intégré à la sonothèque et mis à disposition en accès libre. Tout un chacun pourra l’écouter, le télécharger et le réutiliser, dans le cadre d’un usage non commercial uniquement.</p>
+<p>
+Si vous avez des questions à ce sujet, ou si vous souhaitez que l’un de vos enregistrements soit retiré de la plateforme, vous pouvez nous écrire à l’adresse suivante : <a href="mailto:contact@ville-sonore.fr">contact@ville-sonore.fr</a>
+.</p>
+</section>
+
+
+<script>document.addEventListener("DOMContentLoaded", () => {
+  const dropdown = document.querySelector(".dropdown");
+  const toggle = document.getElementById("dropdownToggle");
+  const menu = dropdown.querySelector(".dropdown-menu");
+  const checkboxes = menu.querySelectorAll("input[type='checkbox']");
+
+  // Ouvrir / fermer
+  toggle.addEventListener("click", () => {
+    dropdown.classList.toggle("open");
+  });
+
+  // Fermer si clic en dehors
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest(".dropdown")) {
+      dropdown.classList.remove("open");
+    }
+  });
+
+  // Affichage des choix sélectionnés
+  checkboxes.forEach(cb => {
+    cb.addEventListener("change", () => {
+      const selected = [...checkboxes]
+        .filter(c => c.checked)
+        .map(c => c.parentNode.textContent.trim());
+      toggle.textContent = selected.length ? selected.join(", ") : "Sélectionner des catégories";
+    });
+  });
+});
+
+
+</script>
+
+
+
+
+
+
+
+
+  <script>
+                    async function googleSheets(values, spreadsheetId, sheetName, date = false) {
+  const payload = {
+    spreadsheetId: spreadsheetId,
+    sheetName: sheetName,
+    values: values,
+    addDate : date
+  };
+
+  const data = encodeURIComponent(JSON.stringify(payload));
+  const body = `data=${data}`;
+
+  const url = 'https://script.google.com/macros/s/AKfycbzbNtW1cUxIFPFJuBF69O30OfaafAhPbjsYYXwtPeINICfWSpxh8jqUWtSbaV6nOvGW/exec';
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: body
+    });
+
+    const text = await res.text();
+    console.log('Réponse du script :', text);
+     closePageLoader();
+    return text;
+  } catch (err) {
+    console.error('Erreur lors de l\'envoi :', err);
+    closePageLoader();
+    return null;
+  }
+
+}
+
+    /************ CONFIG À REMPLACER ************/
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxo4zANyxLOEUIX29T0t7-_PmVGTortQHktqDcZZOxr5or1cAy9dAV7kvWQZeSIueuZ/exec"; // <- ton URL Apps Script
+    const FOLDER_ID  = "1NckhGzOgAJ8c8Aax2jR_nCuAxwSFEC44"; // <- ID du dossier Drive de destination
+    /********************************************/
+
+    // Éléments DOM
+    const startBtn       = document.getElementById("startBtn");
+    const stopBtn        = document.getElementById("stopBtn");
+    const submitBtn      = document.getElementById("submitBtn");
+    const statusEl       = document.getElementById("status");
+    const metadataBox    = document.getElementById("metadataBox");
+    const titreInput     = document.getElementById("titreInput");
+    const descriptionInput = document.getElementById("descriptionInput");
+    const audioPlayback  = document.getElementById("audioPlayback");
+
+    // État / données
+    let audioStream, audioContext, sourceNode, processorNode, silentGain;
+    let audioBufferData = [];
+    let sampleRate = 44100;
+    let recording = false;
+    let startTime = 0, endTime = 0;
+    let lastAudioBlob = null;
+
+
+
+    // Optionnel : collecte de la position
+// Optionnel : collecte de la position (tentative au chargement + réessai au submit)
+let position = { lat: null, lon: null };
+let positionObtained = false;
+
+function getPosition(timeout = 7000) {
+  return new Promise((resolve) => {
+    if (!("geolocation" in navigator)) return resolve(null);
+    let resolved = false;
+    const timer = setTimeout(() => {
+      if (!resolved) { resolved = true; resolve(null); }
+    }, timeout);
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timer);
+        position.lat = pos.coords.latitude;
+        position.lon = pos.coords.longitude;
+        positionObtained = true;
+        resolve(position);
+      },
+      (err) => {
+        if (resolved) return;
+        resolved = true;
+        clearTimeout(timer);
+        console.warn("Geolocation error:", err);
+        resolve(null);
+      },
+      { enableHighAccuracy: true, maximumAge: 10_000, timeout: timeout }
+    );
+  });
+}
+
+// Lancer une première tentative au chargement de la page (sans bloquer le reste)
+document.addEventListener("DOMContentLoaded", () => {
+  // on ne force pas l'utilisateur à attendre — on précharge la position en fond
+  getPosition(7000).then(pos => {
+    if (!pos) console.log("Position non récupérée au chargement.");
+  });
+});
+
+
+    async function initMic() {
+      try {
+        audioStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            sampleRate: 48000,
+            channelCount: 1,
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+          }
+        });
+
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        sampleRate = audioContext.sampleRate;
+
+        sourceNode = audioContext.createMediaStreamSource(audioStream);
+        processorNode = audioContext.createScriptProcessor(8192, 1, 1);
+
+        // Gain à zéro pour éviter tout larsen/monitoring audible
+        silentGain = audioContext.createGain();
+        silentGain.gain.value = 0;
+
+        processorNode.onaudioprocess = e => {
+          if (!recording) return;
+          const channelData = e.inputBuffer.getChannelData(0);
+          // Copier le chunk pour ne pas referencer le buffer réutilisé
+          audioBufferData.push(new Float32Array(channelData));
+        };
+
+        // Chaîne : source -> processor -> silentGain -> destination
+        sourceNode.connect(processorNode);
+        processorNode.connect(silentGain);
+        silentGain.connect(audioContext.destination);
+
+      } catch (err) {
+        statusEl.textContent = "❌ Accès micro refusé ou indisponible.";
+        console.error(err);
+        throw err;
+      }
+    }
+
+    initMic();
+
+     // Journal local
+    const data = [];
+
+
+    function floatTo16BitPCM(float32Array) {
+      const buffer = new ArrayBuffer(float32Array.length * 2);
+      const view = new DataView(buffer);
+      let offset = 0;
+      for (let i = 0; i < float32Array.length; i++, offset += 2) {
+        let s = Math.max(-1, Math.min(1, float32Array[i]));
+        view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+      }
+      return view;
+    }
+
+    function writeString(view, offset, string) {
+      for (let i = 0; i < string.length; i++) view.setUint8(offset + i, string.charCodeAt(i));
+    }
+
+    function writeWAV(samples, sampleRate) {
+      const buffer = new ArrayBuffer(44 + samples.length * 2);
+      const view = new DataView(buffer);
+
+      // RIFF header
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, 36 + samples.length * 2, true);
+      writeString(view, 8, 'WAVE');
+
+      // fmt chunk
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true); // chunk size
+      view.setUint16(20, 1, true);  // PCM
+      view.setUint16(22, 1, true);  // mono
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true); // byte rate
+      view.setUint16(32, 2, true); // block align
+      view.setUint16(34, 16, true); // bits per sample
+
+      // data chunk
+      writeString(view, 36, 'data');
+      view.setUint32(40, samples.length * 2, true);
+
+      const pcmData = floatTo16BitPCM(samples);
+      new Uint8Array(buffer, 44).set(new Uint8Array(pcmData.buffer));
+      return buffer;
+    }
+
+    startBtn.onclick = async () => {
+      try {
+        /*if (!audioStream) await initMic();*/
+        audioBufferData = [];
+        recording = true;
+        startTime = Date.now();
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        statusEl.textContent = "Enregistrement en cours...";
+        metadataBox.style.display = "none";
+        lastAudioBlob = null;
+      } catch (e) { /* déjà géré */ }
+    };
+
+    stopBtn.onclick = () => {
+      if (!recording) return;
+      recording = false;
+      endTime = Date.now();
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+
+      // Fusionner les chunks
+      const totalLength = audioBufferData.reduce((acc, cur) => acc + cur.length, 0);
+      if (totalLength === 0) {
+        statusEl.textContent = "⚠️ Aucun échantillon capturé.";
+        return;
+      }
+      const merged = new Float32Array(totalLength);
+      let offset = 0;
+      for (const chunk of audioBufferData) { merged.set(chunk, offset); offset += chunk.length; }
+
+      const wavBuffer = writeWAV(merged, sampleRate);
+      lastAudioBlob = new Blob([wavBuffer], { type: "audio/wav" });
+      audioPlayback.src = URL.createObjectURL(lastAudioBlob);
+
+      const dureeSec = ((endTime - startTime) / 1000).toFixed(1);
+      metadataBox.dataset.duree = dureeSec;
+      metadataBox.style.display = "flex";
+      statusEl.textContent = `Fichier WAV prêt (${dureeSec}s). Renseignez les infos puis "Soumettre".`;
+    };
+
+
+    submitBtn.onclick = async () => {
+      if (!lastAudioBlob) {
+        statusEl.textContent = "❌ Aucun fichier à envoyer. Enregistre d'abord.";
+        return;
+      }
+      if (!SCRIPT_URL || SCRIPT_URL.includes("REMPLACE_MOI")) {
+        statusEl.textContent = "❌ SCRIPT_URL non configurée.";
+        return;
+      }
+      if (!FOLDER_ID || FOLDER_ID.includes("REMPLACE_MOI")) {
+        statusEl.textContent = "❌ FOLDER_ID non configuré.";
+        return;
+      }
+
+      openPageLoader("Envoi en cours...");
+
+      // Si on n'a pas de position (ou si elle est nulle), retenter ici (timeout court)
+      if (!positionObtained) {
+        statusEl.textContent = "📍 Tentative de récupération de la position...";
+        const pos = await getPosition(7000); // attend jusqu'à 7s
+        if (pos) {
+          position = pos;
+          statusEl.textContent = "📍 Position récupérée.";
+        } else {
+          statusEl.textContent = "⚠️ Position indisponible — envoi sans coordonnées.";
+          console.log("Position indisponible au moment du submit.");
+        }
+      }
+
+      const now = new Date();
+      const titre = titreInput.value.trim() || `Enregistrement`;
+      const description = descriptionInput.value.trim() || `${titre} — ${now.toLocaleDateString()}`;
+      const dureeSec = metadataBox.dataset.duree || ((endTime - startTime) / 1000).toFixed(1);
+      const date = now.toLocaleDateString();
+      const heure = now.toLocaleTimeString();
+
+      // Journal local
+      data.push({
+        titre,
+        description,
+        lat: position.lat,
+        lon: position.lon,
+        date,
+        heure,
+        duree: dureeSec
+      });
+      console.log("Données enregistrées :", data);
+
+      statusEl.textContent = "Préparation du fichier (Base64)…";
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        try {
+          const base64Data = (reader.result || "").toString().split(',')[1];
+          if (!base64Data) {
+            statusEl.textContent = "❌ Conversion Base64 échouée.";
+            closePageLoader();
+            return;
+          }
+          statusEl.textContent = "Envoi vers Google Drive…";
+
+          const now2 = new Date();
+          const annee  = now2.getFullYear();
+          const mois   = String(now2.getMonth() + 1).padStart(2, "0");
+          const jour   = String(now2.getDate()).padStart(2, "0");
+          const heure2  = String(now2.getHours()).padStart(2, "0");
+          const minute = String(now2.getMinutes()).padStart(2, "0");
+          const seconde = String(now2.getSeconds()).padStart(2, "0");
+
+          // Titre nettoyé pour un nom de fichier
+          const safeTitre = titre
+            .normalize("NFD")                 // enlève les accents
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^a-zA-Z0-9_-]/g, "_")
+            .substring(0, 50) || "sans_titre";
+          const filename = `${annee}_${mois}_${jour}_${heure2}_${minute}_${seconde}_${safeTitre}.wav`;
+
+          fetch(SCRIPT_URL, {
+            method: "POST",
+            body: new URLSearchParams({
+              filename: filename,
+              mimetype: "audio/wav",
+              data: base64Data,
+              folderId: FOLDER_ID
+            })
+          })
+          .then(res => res.json())
+          .then(result => {
+            if (result.status === "success") {
+              // récupération des catégories sélectionnées
+              const checkboxes = document.querySelectorAll(".dropdown-menu input[type='checkbox']");
+              const selectedValues = [];
+              checkboxes.forEach(checkbox => { if (checkbox.checked) selectedValues.push(checkbox.value); });
+              const resultText = selectedValues.join("; ");
+
+              // Envoi vers Google Sheets (fonction googleSheets déjà définie dans ton code)
+              googleSheets(
+                [position.lat, position.lon, date, heure, dureeSec, titre, description, result.fileUrl, resultText],
+                "16LhO82rFlzNwrnF6B64rKK91_Q7o0Cc9VhhuuJLu9eY",
+                "Feuille 1"
+              );
+
+              //statusEl.innerHTML = `Audio uploadé : <a href="${result.fileUrl}" target="_blank" rel="noopener">Ouvrir</a>`;
+              statusEl.innerHTML = `<br>Audio uploadé : <a href="https://ville-sonore.fr?src=app" target="_blank" rel="noopener">Ouvrir la carte !</a>`;
+              // Reset léger
+              titreInput.value = "";
+              descriptionInput.value = "";
+              metadataBox.style.display = "none";
+              closePageLoader();
+            } else {
+              statusEl.textContent = "❌ Erreur Apps Script : " + (result.message || "Inconnue");
+              closePageLoader();
+            }
+          })
+          .catch(err => {
+            console.error(err);
+            statusEl.textContent = "❌ Erreur réseau : " + err;
+            closePageLoader();
+          });
+
+        } catch (e) {
+          console.error(e);
+          statusEl.textContent = "❌ Erreur lors de la préparation du fichier.";
+          closePageLoader();
+        }
+      };
+      reader.readAsDataURL(lastAudioBlob);
+    };
+
+
+    // Nettoyage audio quand on quitte la page
+    window.addEventListener("beforeunload", () => {
+      try {
+        if (processorNode) processorNode.disconnect();
+        if (silentGain) silentGain.disconnect();
+        if (sourceNode) sourceNode.disconnect();
+        if (audioContext) audioContext.close();
+        if (audioStream) audioStream.getTracks().forEach(t => t.stop());
+      } catch {}
+    });
+  </script>
+</main>
+
+
+</body>
+</html>
