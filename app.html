@@ -26,6 +26,18 @@
 
   <link rel="icon" href="logo.png" type="image/x-icon">
 
+  <script>
+    document.addEventListener('click', function (event) {
+  const link = event.target.closest('a');
+  if (!link || link.target !== '_blank') return;
+
+  if (window.Capacitor && Capacitor.Plugins?.Browser) {
+    event.preventDefault();
+    Capacitor.Plugins.Browser.open({ url: link.href });
+  }
+});
+
+  </script>
 
 </head>
 <body>
