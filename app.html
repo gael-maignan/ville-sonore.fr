@@ -845,13 +845,6 @@ function getPosition(timeout = 7000) {
   });
 }
 
-// Lancer une première tentative au chargement de la page (sans bloquer le reste)
-document.addEventListener("DOMContentLoaded", () => {
-  // on ne force pas l'utilisateur à attendre — on précharge la position en fond
-  getPosition(7000).then(pos => {
-    if (!pos) console.log("Position non récupérée au chargement.");
-  });
-});
 
 
     async function initMic() {
