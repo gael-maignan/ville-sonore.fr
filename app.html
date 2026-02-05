@@ -935,49 +935,6 @@ function getPosition(timeout = 7000) {
       new Uint8Array(buffer, 44).set(new Uint8Array(pcmData.buffer));
       return buffer;
     }
-
-    startBtn.onclick = async () => {
-      try {
-        /*if (!audioStream) await initMic();*/
-        audioBufferData = [];
-        recording = true;
-        startTime = Date.now();
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
-        statusEl.textContent = "Enregistrement en cours...";
-        metadataBox.style.display = "none";
-        lastAudioBlob = null;
-      } catch (e) { /* déjà géré */ }
-    };
-
-    stopBtn.onclick = () => {
-      if (!recording) return;
-      recording = false;
-      endTime = Date.now();
-      startBtn.disabled = false;
-      stopBtn.disabled = true;
-
-      // Fusionner les chunks
-      const totalLength = audioBufferData.reduce((acc, cur) => acc + cur.length, 0);
-      if (totalLength === 0) {
-        statusEl.textContent = "⚠️ Aucun échantillon capturé.";
-        return;
-      }
-      const merged = new Float32Array(totalLength);
-      let offset = 0;
-      for (const chunk of audioBufferData) { merged.set(chunk, offset); offset += chunk.length; }
-
-      const wavBuffer = writeWAV(merged, sampleRate);
-      lastAudioBlob = new Blob([wavBuffer], { type: "audio/wav" });
-      audioPlayback.src = URL.createObjectURL(lastAudioBlob);
-
-      const dureeSec = ((endTime - startTime) / 1000).toFixed(1);
-      metadataBox.dataset.duree = dureeSec;
-      metadataBox.style.display = "flex";
-      statusEl.textContent = `Fichier WAV prêt (${dureeSec}s). Renseignez les infos puis "Soumettre".`;
-    };
-
-
     submitBtn.onclick = async () => {
       if (!lastAudioBlob) {
         statusEl.textContent = "❌ Aucun fichier à envoyer. Enregistre d'abord.";
