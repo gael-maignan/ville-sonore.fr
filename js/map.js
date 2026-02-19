@@ -610,7 +610,7 @@ container.querySelectorAll('.play').forEach(btn=>{
     const detailedIcon = new L.DivIcon({
       className: 'custom-svg-icon',
       html: `
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="34" viewBox="0 0 36 50">
+        <svg xmlns="https://www.w3.org/2000/svg" width="24" height="34" viewBox="0 0 36 50">
           <path d="M18 0C8.06 0 0 8.06 0 18c0 12.03 18 32 18 32s18-19.97 18-32C36 8.06 27.94 0 18 0z" fill="#762B84"/>
           <circle cx="18" cy="18" r="7" fill="white"/>
         </svg>
@@ -623,7 +623,7 @@ container.querySelectorAll('.play').forEach(btn=>{
     // icône cercle violet (zoom éloigné)
     const simpleIcon = new L.DivIcon({
       className: 'custom-circle-icon',
-      html: `<svg width="24" height="24" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      html: `<svg width="24" height="24" viewBox="0 0 100 100" xmlns="https://www.w3.org/2000/svg">
   <defs>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
       <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="black" flood-opacity="0.3"/>
